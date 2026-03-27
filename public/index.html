@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Round Robin Tournament Manager</title>
+	<style>
+		:root {
+			--bg: #f6f1e8;
+			--panel: rgba(255, 251, 244, 0.92);
+			--panel-strong: #fffaf0;
+			--stroke: rgba(76, 54, 36, 0.16);
+			--text: #2e241b;
+			--muted: #6b5a49;
+			--accent: #c04b2d;
+			--accent-dark: #8e2f18;
+			--accent-soft: rgba(192, 75, 45, 0.12);
+			--success: #2c7a4b;
+			--warning: #9c5a14;
+			--shadow: 0 20px 60px rgba(94, 61, 27, 0.12);
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			font-family: "Avenir Next", "Segoe UI", sans-serif;
+			color: var(--text);
+			background:
+				radial-gradient(circle at top left, rgba(192, 75, 45, 0.16), transparent 32%),
+				radial-gradient(circle at top right, rgba(44, 122, 75, 0.14), transparent 28%),
+				linear-gradient(180deg, #fbf7f0 0%, var(--bg) 52%, #efe6d7 100%);
+			min-height: 100vh;
+		}
+
+		h1, h2, h3 {
+			font-family: "Charter", "Iowan Old Style", Georgia, serif;
+			margin: 0;
+			letter-spacing: 0.02em;
+		}
+
+		p {
+			margin: 0;
+			color: var(--muted);
+			line-height: 1.5;
+		}
+
+		button, input, select {
+			font: inherit;
+		}
+
+		.page {
+			width: min(1180px, calc(100% - 32px));
+			margin: 0 auto;
+			padding: 32px 0 48px;
+		}
+
+		.hero {
+			display: grid;
+			grid-template-columns: 1.5fr 1fr;
+			gap: 20px;
+			margin-bottom: 24px;
+		}
+
+		.hero-card,
+		.panel {
+			background: var(--panel);
+			backdrop-filter: blur(12px);
+			border: 1px solid var(--stroke);
+			border-radius: 24px;
+			box-shadow: var(--shadow);
+		}
+
+		.hero-card {
+			padding: 28px;
+		}
+
+		.hero-badge {
+			display: inline-flex;
+			padding: 8px 12px;
+			border-radius: 999px;
+			background: var(--accent-soft);
+			color: var(--accent-dark);
+			font-size: 13px;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			margin-bottom: 18px;
+		}
+
+		.hero h1 {
+			font-size: clamp(2.3rem, 4vw, 4rem);
+			margin-bottom: 10px;
+		}
+
+		.hero-meta {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 14px;
+			margin-top: 22px;
+		}
+
+		.hero-stat {
+			padding: 16px;
+			border-radius: 18px;
+			background: var(--panel-strong);
+			border: 1px solid var(--stroke);
+		}
+
+		.hero-stat strong {
+			display: block;
+			font-size: 1.6rem;
+			color: var(--accent-dark);
+		}
+
+		.layout {
+			display: grid;
+			grid-template-columns: 320px minmax(0, 1fr);
+			gap: 20px;
+		}
+
+		.sidebar,
+		.workspace {
+			display: grid;
+			gap: 20px;
+		}
+
+		.panel {
+			padding: 22px;
+		}
+
+		.panel-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 16px;
+		}
+
+		.panel-header button {
+			padding: 10px 14px;
+		}
+
+		form {
+			display: grid;
+			gap: 12px;
+		}
+
+		label {
+			display: grid;
+			gap: 6px;
+			font-size: 14px;
+			font-weight: 600;
+			color: var(--muted);
+		}
+
+		input,
+		select {
+			width: 100%;
+			padding: 12px 14px;
+			border-radius: 14px;
+			border: 1px solid rgba(110, 83, 58, 0.18);
+			background: rgba(255, 255, 255, 0.92);
+			color: var(--text);
+		}
+
+		input:focus,
+		select:focus {
+			outline: 2px solid rgba(192, 75, 45, 0.24);
+			border-color: rgba(192, 75, 45, 0.44);
+		}
+
+		button {
+			border: 0;
+			border-radius: 14px;
+			padding: 12px 16px;
+			background: linear-gradient(135deg, var(--accent) 0%, #d76e2f 100%);
+			color: white;
+			font-weight: 700;
+			cursor: pointer;
+			box-shadow: 0 10px 22px rgba(192, 75, 45, 0.2);
+			transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+		}
+
+		button:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 12px 28px rgba(192, 75, 45, 0.25);
+		}
+
+		button.secondary {
+			background: var(--panel-strong);
+			color: var(--text);
+			border: 1px solid var(--stroke);
+			box-shadow: none;
+		}
+
+		button.ghost {
+			background: transparent;
+			border: 1px solid var(--stroke);
+			color: var(--text);
+			box-shadow: none;
+		}
+
+		button:disabled {
+			opacity: 0.56;
+			cursor: not-allowed;
+			transform: none;
+		}
+
+		.collection {
+			display: grid;
+			gap: 10px;
+		}
+
+		.item {
+			display: grid;
+			gap: 6px;
+			padding: 14px 16px;
+			border-radius: 16px;
+			background: rgba(255, 255, 255, 0.76);
+			border: 1px solid rgba(110, 83, 58, 0.12);
+			cursor: pointer;
+			text-align: left;
+			box-shadow: none;
+			color: var(--text);
+		}
+
+		.item.active {
+			background: linear-gradient(135deg, rgba(192, 75, 45, 0.14), rgba(215, 110, 47, 0.18));
+			border-color: rgba(192, 75, 45, 0.26);
+		}
+
+		.item strong {
+			font-size: 1rem;
+		}
+
+		.item small {
+			color: var(--muted);
+		}
+
+		.empty {
+			padding: 18px;
+			border-radius: 16px;
+			background: rgba(255, 255, 255, 0.56);
+			border: 1px dashed rgba(110, 83, 58, 0.18);
+			color: var(--muted);
+		}
+
+		.workspace-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 20px;
+		}
+
+		.summary-grid {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 12px;
+			margin-top: 18px;
+		}
+
+		.summary-card {
+			padding: 14px;
+			border-radius: 16px;
+			background: var(--panel-strong);
+			border: 1px solid var(--stroke);
+		}
+
+		.summary-card span {
+			display: block;
+			font-size: 13px;
+			color: var(--muted);
+			margin-bottom: 4px;
+		}
+
+		.summary-card strong {
+			font-size: 1.25rem;
+		}
+
+		.status-pill {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 9px 12px;
+			border-radius: 999px;
+			font-size: 13px;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+		}
+
+		.status-planning {
+			background: rgba(156, 90, 20, 0.12);
+			color: var(--warning);
+		}
+
+		.status-started {
+			background: rgba(192, 75, 45, 0.12);
+			color: var(--accent-dark);
+		}
+
+		.status-finished {
+			background: rgba(44, 122, 75, 0.14);
+			color: var(--success);
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 14px;
+		}
+
+		th,
+		td {
+			padding: 12px 10px;
+			border-bottom: 1px solid rgba(110, 83, 58, 0.12);
+			text-align: left;
+			font-size: 14px;
+		}
+
+		th {
+			color: var(--muted);
+			font-weight: 700;
+		}
+
+		.match-list {
+			display: grid;
+			gap: 12px;
+			margin-top: 14px;
+		}
+
+		.match-item {
+			padding: 14px 16px;
+			border-radius: 16px;
+			background: rgba(255, 255, 255, 0.78);
+			border: 1px solid rgba(110, 83, 58, 0.12);
+		}
+
+		.match-item strong {
+			display: block;
+			margin-bottom: 4px;
+		}
+
+		.flash {
+			margin-top: 14px;
+			padding: 12px 14px;
+			border-radius: 14px;
+			font-size: 14px;
+		}
+
+		.flash.info {
+			background: rgba(44, 122, 75, 0.12);
+			color: var(--success);
+		}
+
+		.flash.error {
+			background: rgba(192, 75, 45, 0.12);
+			color: var(--accent-dark);
+		}
+
+		.toolbar {
+			display: flex;
+			gap: 10px;
+			flex-wrap: wrap;
+		}
+
+		@media (max-width: 960px) {
+			.hero,
+			.layout,
+			.workspace-grid {
+				grid-template-columns: 1fr;
+			}
+
+			.summary-grid,
+			.hero-meta {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+		}
+
+		@media (max-width: 640px) {
+			.page {
+				width: min(100% - 20px, 100%);
+				padding-top: 20px;
+			}
+
+			.panel,
+			.hero-card {
+				padding: 18px;
+				border-radius: 18px;
+			}
+
+			.summary-grid,
+			.hero-meta {
+				grid-template-columns: 1fr;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="page">
+		<section class="hero">
+			<div class="hero-card">
+				<div class="hero-badge">Round Robin Control Room</div>
+				<h1>Tournament Manager</h1>
+				<p>
+					Diese Oberfläche sitzt direkt auf deiner Express-API. Du kannst Spieler anlegen,
+					Turniere erstellen, Teilnehmer hinzufügen, Ergebnisse erfassen und die Tabelle live sehen.
+				</p>
+				<div class="hero-meta">
+					<div class="hero-stat">
+						<strong id="playerCount">0</strong>
+						<span>Spieler</span>
+					</div>
+					<div class="hero-stat">
+						<strong id="tournamentCount">0</strong>
+						<span>Turniere</span>
+					</div>
+					<div class="hero-stat">
+						<strong id="selectedStatusLabel">-</strong>
+						<span>Aktueller Status</span>
+					</div>
+				</div>
+			</div>
+			<div class="panel">
+				<div class="panel-header">
+					<h2>API Schnellcheck</h2>
+					<button id="refreshButton" class="secondary" type="button">Neu laden</button>
+				</div>
+				<p>
+					Die Seite spricht dieselben Endpunkte an, die du auch per Postman oder `curl`
+					verwenden kannst.
+				</p>
+				<div id="flash" class="flash info" style="display: none;"></div>
+			</div>
+		</section>
+
+		<section class="layout">
+			<div class="sidebar">
+				<div class="panel">
+					<div class="panel-header">
+						<h2>Spieler</h2>
+					</div>
+					<form id="playerForm">
+						<label>
+							Name
+							<input id="playerNameInput" name="name" placeholder="z. B. Alice" required />
+						</label>
+						<button type="submit">Spieler anlegen</button>
+					</form>
+					<div id="playersList" class="collection" style="margin-top: 16px;"></div>
+				</div>
+
+				<div class="panel">
+					<div class="panel-header">
+						<h2>Turniere</h2>
+					</div>
+					<form id="tournamentForm">
+						<label>
+							Name
+							<input id="tournamentNameInput" name="name" placeholder="z. B. Berlin Open" required />
+						</label>
+						<button type="submit">Turnier anlegen</button>
+					</form>
+					<div id="tournamentsList" class="collection" style="margin-top: 16px;"></div>
+				</div>
+			</div>
+
+			<div class="workspace">
+				<div class="panel">
+					<div class="panel-header">
+						<div>
+							<h2 id="tournamentTitle">Noch kein Turnier ausgewählt</h2>
+							<p id="tournamentSubtitle">Wähle links ein Turnier aus oder lege ein neues an.</p>
+						</div>
+						<div class="toolbar">
+							<button id="refreshTournamentButton" class="ghost" type="button">Turnier aktualisieren</button>
+							<div id="statusPill" class="status-pill status-planning">Keine Auswahl</div>
+						</div>
+					</div>
+					<div id="tournamentSummary" class="summary-grid"></div>
+				</div>
+
+				<div class="workspace-grid">
+					<div class="panel">
+						<div class="panel-header">
+							<h3>Teilnehmer hinzufügen</h3>
+						</div>
+						<form id="registrationForm">
+							<label>
+								Spieler
+								<select id="registrationPlayerSelect"></select>
+							</label>
+							<button id="registrationSubmitButton" type="submit">Zum Turnier hinzufügen</button>
+						</form>
+						<p id="registrationHelp">Spieler können nur im Status planning hinzugefügt werden.</p>
+						<div id="participantsList" class="collection" style="margin-top: 16px;"></div>
+					</div>
+
+					<div class="panel">
+						<div class="panel-header">
+							<h3>Ergebnis eintragen</h3>
+						</div>
+						<form id="matchForm">
+							<label>
+								Spieler 1
+								<select id="playerOneSelect"></select>
+							</label>
+							<label>
+								Spieler 2
+								<select id="playerTwoSelect"></select>
+							</label>
+							<label>
+								Punkte Spieler 1
+								<input id="playerOneScoreInput" type="number" min="0" step="1" value="0" required />
+							</label>
+							<label>
+								Punkte Spieler 2
+								<input id="playerTwoScoreInput" type="number" min="0" step="1" value="0" required />
+							</label>
+							<button id="matchSubmitButton" type="submit">Ergebnis speichern</button>
+						</form>
+						<p id="matchHelp">Nur noch offene Paarungen sind auswählbar.</p>
+					</div>
+				</div>
+
+				<div class="workspace-grid">
+					<div class="panel">
+						<div class="panel-header">
+							<h3>Leaderboard</h3>
+						</div>
+						<div id="leaderboardContainer"></div>
+					</div>
+
+					<div class="panel">
+						<div class="panel-header">
+							<h3>Gespielte Matches</h3>
+						</div>
+						<div id="matchesContainer"></div>
+					</div>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<script>
+		const state = {
+			players: [],
+			tournaments: [],
+			selectedTournamentId: null,
+			tournamentDetail: null,
+			leaderboard: null,
+			matches: [],
+			flash: null,
+		};
+
+		const elements = {
+			playerCount: document.getElementById('playerCount'),
+			tournamentCount: document.getElementById('tournamentCount'),
+			selectedStatusLabel: document.getElementById('selectedStatusLabel'),
+			flash: document.getElementById('flash'),
+			playersList: document.getElementById('playersList'),
+			tournamentsList: document.getElementById('tournamentsList'),
+			tournamentTitle: document.getElementById('tournamentTitle'),
+			tournamentSubtitle: document.getElementById('tournamentSubtitle'),
+			tournamentSummary: document.getElementById('tournamentSummary'),
+			statusPill: document.getElementById('statusPill'),
+			participantsList: document.getElementById('participantsList'),
+			registrationPlayerSelect: document.getElementById('registrationPlayerSelect'),
+			registrationSubmitButton: document.getElementById('registrationSubmitButton'),
+			registrationHelp: document.getElementById('registrationHelp'),
+			playerOneSelect: document.getElementById('playerOneSelect'),
+			playerTwoSelect: document.getElementById('playerTwoSelect'),
+			matchSubmitButton: document.getElementById('matchSubmitButton'),
+			matchHelp: document.getElementById('matchHelp'),
+			leaderboardContainer: document.getElementById('leaderboardContainer'),
+			matchesContainer: document.getElementById('matchesContainer'),
+			playerNameInput: document.getElementById('playerNameInput'),
+			tournamentNameInput: document.getElementById('tournamentNameInput'),
+			playerOneScoreInput: document.getElementById('playerOneScoreInput'),
+			playerTwoScoreInput: document.getElementById('playerTwoScoreInput'),
+			refreshButton: document.getElementById('refreshButton'),
+			refreshTournamentButton: document.getElementById('refreshTournamentButton'),
+			playerForm: document.getElementById('playerForm'),
+			tournamentForm: document.getElementById('tournamentForm'),
+			registrationForm: document.getElementById('registrationForm'),
+			matchForm: document.getElementById('matchForm'),
+		};
+
+		function escapeHtml(value) {
+			return String(value).replace(/[&<>"']/g, (character) => ({
+				'&': '&amp;',
+				'<': '&lt;',
+				'>': '&gt;',
+				'"': '&quot;',
+				"'": '&#39;',
+			}[character]));
+		}
+
+		function renderFlash() {
+			if (!state.flash) {
+				elements.flash.style.display = 'none';
+				elements.flash.textContent = '';
+				return;
+			}
+
+			elements.flash.textContent = state.flash.message;
+			elements.flash.className = `flash ${state.flash.type}`;
+			elements.flash.style.display = 'block';
+		}
+
+		function showMessage(message, type = 'info') {
+			state.flash = { message, type };
+			renderFlash();
+		}
+
+		function clearMessage() {
+			state.flash = null;
+			renderFlash();
+		}
+
+		async function api(path, init = {}) {
+			const response = await fetch(path, {
+				headers: {
+					'Content-Type': 'application/json',
+					...(init.headers || {}),
+				},
+				...init,
+			});
+
+			const text = await response.text();
+			const body = text ? JSON.parse(text) : {};
+
+			if (!response.ok) {
+				throw new Error(body.error || `HTTP ${response.status}`);
+			}
+
+			return body.data;
+		}
+
+		function statusClass(status) {
+			if (status === 'finished') return 'status-finished';
+			if (status === 'started') return 'status-started';
+			return 'status-planning';
+		}
+
+		function pairKey(playerOneId, playerTwoId) {
+			return playerOneId < playerTwoId
+				? `${playerOneId}-${playerTwoId}`
+				: `${playerTwoId}-${playerOneId}`;
+		}
+
+		function getRemainingPairs(participants, matches) {
+			const playedPairs = new Set(
+				matches.map((match) => pairKey(match.playerOneId, match.playerTwoId)),
+			);
+			const remainingPairs = [];
+
+			for (let firstIndex = 0; firstIndex < participants.length; firstIndex += 1) {
+				for (
+					let secondIndex = firstIndex + 1;
+					secondIndex < participants.length;
+					secondIndex += 1
+				) {
+					const playerOne = participants[firstIndex];
+					const playerTwo = participants[secondIndex];
+
+					if (!playedPairs.has(pairKey(playerOne.id, playerTwo.id))) {
+						const normalizedPair =
+							playerOne.id < playerTwo.id
+								? { playerOneId: playerOne.id, playerTwoId: playerTwo.id }
+								: { playerOneId: playerTwo.id, playerTwoId: playerOne.id };
+
+						remainingPairs.push({
+							playerOneId: normalizedPair.playerOneId,
+							playerTwoId: normalizedPair.playerTwoId,
+						});
+					}
+				}
+			}
+
+			return remainingPairs;
+		}
+
+		function renderCounts() {
+			elements.playerCount.textContent = String(state.players.length);
+			elements.tournamentCount.textContent = String(state.tournaments.length);
+			elements.selectedStatusLabel.textContent = state.leaderboard
+				? state.leaderboard.status
+				: '-';
+		}
+
+		function renderPlayers() {
+			if (!state.players.length) {
+				elements.playersList.innerHTML = '<div class="empty">Noch keine Spieler angelegt.</div>';
+				return;
+			}
+
+			elements.playersList.innerHTML = state.players
+				.map(
+					(player) => `
+						<div class="item" type="button">
+							<strong>${escapeHtml(player.name)}</strong>
+							<small>ID ${player.id}</small>
+						</div>
+					`,
+				)
+				.join('');
+		}
+
+		function renderTournaments() {
+			if (!state.tournaments.length) {
+				elements.tournamentsList.innerHTML = '<div class="empty">Noch kein Turnier angelegt.</div>';
+				return;
+			}
+
+			elements.tournamentsList.innerHTML = state.tournaments
+				.map(
+					(tournament) => `
+						<button
+							class="item ${state.selectedTournamentId === tournament.id ? 'active' : ''}"
+							type="button"
+							data-tournament-id="${tournament.id}"
+						>
+							<strong>${escapeHtml(tournament.name)}</strong>
+							<small>${escapeHtml(tournament.status)} · ${tournament.participantCount} Teilnehmer</small>
+						</button>
+					`,
+				)
+				.join('');
+
+			elements.tournamentsList
+				.querySelectorAll('[data-tournament-id]')
+				.forEach((button) => {
+					button.addEventListener('click', async () => {
+						try {
+							state.selectedTournamentId = Number(button.dataset.tournamentId);
+							await loadSelectedTournament();
+							render();
+						} catch (error) {
+							showMessage(error.message, 'error');
+						}
+					});
+				});
+		}
+
+		function setSelectOptions(select, options, placeholder, preferredValue = select.value) {
+			if (!options.length) {
+				select.innerHTML = `<option value="">${placeholder}</option>`;
+				select.disabled = true;
+				return;
+			}
+
+			select.disabled = false;
+			select.innerHTML = options
+				.map(
+					(option) => `<option value="${option.id}">${escapeHtml(option.name)} (ID ${option.id})</option>`,
+				)
+				.join('');
+
+			const nextValue = options.some((option) => String(option.id) === String(preferredValue))
+				? String(preferredValue)
+				: String(options[0].id);
+
+			select.value = nextValue;
+		}
+
+		function renderTournamentWorkspace() {
+			if (!state.tournamentDetail || !state.leaderboard) {
+				elements.tournamentTitle.textContent = 'Noch kein Turnier ausgewählt';
+				elements.tournamentSubtitle.textContent =
+					'Wähle links ein Turnier aus oder lege ein neues an.';
+				elements.statusPill.className = 'status-pill status-planning';
+				elements.statusPill.textContent = 'Keine Auswahl';
+				elements.tournamentSummary.innerHTML = `
+					<div class="empty" style="grid-column: 1 / -1;">
+						Sobald du ein Turnier auswählst, erscheinen hier Status, Teilnehmer, Matches und Tabelle.
+					</div>
+				`;
+				elements.participantsList.innerHTML = '<div class="empty">Keine Teilnehmer sichtbar.</div>';
+				elements.leaderboardContainer.innerHTML = '<div class="empty">Noch keine Tabelle.</div>';
+				elements.matchesContainer.innerHTML = '<div class="empty">Noch keine Matches.</div>';
+				setSelectOptions(elements.registrationPlayerSelect, [], 'Kein Spieler verfügbar');
+				setSelectOptions(elements.playerOneSelect, [], 'Keine Teilnehmer');
+				setSelectOptions(elements.playerTwoSelect, [], 'Keine Teilnehmer');
+				elements.registrationSubmitButton.disabled = true;
+				elements.matchSubmitButton.disabled = true;
+				elements.registrationHelp.textContent = 'Bitte zuerst ein Turnier auswählen.';
+				elements.matchHelp.textContent = 'Bitte zuerst ein Turnier auswählen.';
+				elements.refreshTournamentButton.disabled = true;
+				return;
+			}
+
+			const { tournamentDetail, leaderboard } = state;
+			const participants = tournamentDetail.participants || [];
+			const remainingPairs = getRemainingPairs(participants, state.matches);
+			const registrationOptions = state.players.filter(
+				(player) => !participants.some((participant) => participant.id === player.id),
+			);
+
+			elements.tournamentTitle.textContent = tournamentDetail.name;
+			elements.tournamentSubtitle.textContent =
+				`Turnier #${tournamentDetail.id} · erstellt am ${tournamentDetail.createdAt}`;
+			elements.statusPill.className = `status-pill ${statusClass(leaderboard.status)}`;
+			elements.statusPill.textContent = leaderboard.status;
+			elements.refreshTournamentButton.disabled = false;
+
+			elements.tournamentSummary.innerHTML = `
+				<div class="summary-card">
+					<span>Teilnehmer</span>
+					<strong>${leaderboard.participantCount}</strong>
+				</div>
+				<div class="summary-card">
+					<span>Matches gespielt</span>
+					<strong>${leaderboard.matchesPlayed}</strong>
+				</div>
+				<div class="summary-card">
+					<span>Erwartete Matches</span>
+					<strong>${leaderboard.expectedMatches}</strong>
+				</div>
+				<div class="summary-card">
+					<span>Status</span>
+					<strong>${leaderboard.status}</strong>
+				</div>
+			`;
+
+			if (!participants.length) {
+				elements.participantsList.innerHTML = '<div class="empty">Noch keine Teilnehmer in diesem Turnier.</div>';
+			} else {
+				elements.participantsList.innerHTML = participants
+					.map(
+						(participant) => `
+							<div class="item" type="button">
+								<strong>${escapeHtml(participant.name)}</strong>
+								<small>ID ${participant.id}</small>
+							</div>
+						`,
+					)
+					.join('');
+			}
+
+			setSelectOptions(
+				elements.registrationPlayerSelect,
+				registrationOptions,
+				'Keine verfügbaren Spieler',
+			);
+
+			const canRegisterPlayers =
+				leaderboard.status === 'planning' && registrationOptions.length > 0;
+			elements.registrationSubmitButton.disabled = !canRegisterPlayers;
+			elements.registrationHelp.textContent = canRegisterPlayers
+				? 'Spieler können jetzt zum Turnier hinzugefügt werden.'
+				: leaderboard.status !== 'planning'
+					? 'Teilnehmer können nur hinzugefügt werden, solange das Turnier noch planning ist.'
+					: 'Es sind keine weiteren Spieler verfügbar.';
+
+			if (!remainingPairs.length) {
+				setSelectOptions(elements.playerOneSelect, [], 'Keine offenen Paarungen');
+				setSelectOptions(elements.playerTwoSelect, [], 'Keine offenen Paarungen');
+				elements.matchSubmitButton.disabled = true;
+				elements.matchHelp.textContent =
+					participants.length < 2
+						? 'Mindestens zwei Teilnehmer werden benötigt.'
+						: 'Es gibt keine offenen Paarungen mehr.';
+			} else {
+				const playerOneOptions = participants.filter((participant) =>
+					remainingPairs.some((pair) => pair.playerOneId === participant.id),
+				);
+				setSelectOptions(
+					elements.playerOneSelect,
+					playerOneOptions,
+					'Keine offenen Paarungen',
+				);
+
+				const selectedPlayerOneId = Number(elements.playerOneSelect.value);
+				const playerTwoOptions = participants.filter((participant) =>
+					remainingPairs.some(
+						(pair) =>
+							pair.playerOneId === selectedPlayerOneId &&
+							pair.playerTwoId === participant.id,
+					),
+				);
+
+				setSelectOptions(
+					elements.playerTwoSelect,
+					playerTwoOptions,
+					'Kein Gegenspieler verfügbar',
+				);
+				elements.matchSubmitButton.disabled = playerTwoOptions.length === 0;
+				elements.matchHelp.textContent =
+					playerTwoOptions.length > 0
+						? 'Nur noch offene Paarungen sind auswählbar.'
+						: 'Für diese Auswahl gibt es keinen offenen Gegner mehr.';
+			}
+
+			if (!leaderboard.leaderboard.length) {
+				elements.leaderboardContainer.innerHTML = '<div class="empty">Noch keine Platzierung vorhanden.</div>';
+			} else {
+				elements.leaderboardContainer.innerHTML = `
+					<table>
+						<thead>
+							<tr>
+								<th>Spieler</th>
+								<th>Punkte</th>
+								<th>Spiele</th>
+								<th>S</th>
+								<th>U</th>
+								<th>N</th>
+							</tr>
+						</thead>
+						<tbody>
+							${leaderboard.leaderboard
+								.map(
+									(entry) => `
+										<tr>
+											<td>${escapeHtml(entry.playerName)}</td>
+											<td>${entry.points}</td>
+											<td>${entry.matchesPlayed}</td>
+											<td>${entry.wins}</td>
+											<td>${entry.draws}</td>
+											<td>${entry.losses}</td>
+										</tr>
+									`,
+								)
+								.join('')}
+						</tbody>
+					</table>
+				`;
+			}
+
+			if (!state.matches.length) {
+				elements.matchesContainer.innerHTML = '<div class="empty">Es wurden noch keine Ergebnisse eingetragen.</div>';
+			} else {
+				elements.matchesContainer.innerHTML = `
+					<div class="match-list">
+						${state.matches
+							.map(
+								(match) => `
+									<div class="match-item">
+										<strong>${escapeHtml(match.playerOneName)} ${match.playerOneScore}:${match.playerTwoScore} ${escapeHtml(match.playerTwoName)}</strong>
+										<p>${match.winnerPlayerId ? `Sieger-ID ${match.winnerPlayerId}` : 'Unentschieden'} · ${match.playedAt}</p>
+									</div>
+								`,
+							)
+							.join('')}
+					</div>
+				`;
+			}
+		}
+
+		function render() {
+			renderCounts();
+			renderPlayers();
+			renderTournaments();
+			renderTournamentWorkspace();
+		}
+
+		async function loadBaseData() {
+			const [players, tournaments] = await Promise.all([
+				api('/players'),
+				api('/tournaments'),
+			]);
+
+			state.players = players;
+			state.tournaments = tournaments;
+
+			if (
+				state.selectedTournamentId &&
+				!state.tournaments.some((tournament) => tournament.id === state.selectedTournamentId)
+			) {
+				state.selectedTournamentId = null;
+			}
+
+			if (!state.selectedTournamentId && state.tournaments.length) {
+				state.selectedTournamentId = state.tournaments[0].id;
+			}
+		}
+
+		async function loadSelectedTournament() {
+			if (!state.selectedTournamentId) {
+				state.tournamentDetail = null;
+				state.leaderboard = null;
+				state.matches = [];
+				return;
+			}
+
+			const [detail, leaderboard, matches] = await Promise.all([
+				api(`/tournaments/${state.selectedTournamentId}`),
+				api(`/tournaments/${state.selectedTournamentId}/leaderboard`),
+				api(`/tournaments/${state.selectedTournamentId}/matches`),
+			]);
+
+			state.tournamentDetail = detail;
+			state.leaderboard = leaderboard;
+			state.matches = matches;
+		}
+
+		async function refresh() {
+			try {
+				await loadBaseData();
+				await loadSelectedTournament();
+				render();
+			} catch (error) {
+				showMessage(error.message, 'error');
+			}
+		}
+
+		elements.playerForm.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			try {
+				await api('/players', {
+					method: 'POST',
+					body: JSON.stringify({ name: elements.playerNameInput.value }),
+				});
+				elements.playerNameInput.value = '';
+				await refresh();
+				showMessage('Spieler angelegt.', 'info');
+			} catch (error) {
+				showMessage(error.message, 'error');
+			}
+		});
+
+		elements.tournamentForm.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			try {
+				const tournament = await api('/tournaments', {
+					method: 'POST',
+					body: JSON.stringify({ name: elements.tournamentNameInput.value }),
+				});
+				elements.tournamentNameInput.value = '';
+				state.selectedTournamentId = tournament.id;
+				await refresh();
+				showMessage('Turnier angelegt.', 'info');
+			} catch (error) {
+				showMessage(error.message, 'error');
+			}
+		});
+
+		elements.registrationForm.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			if (!state.selectedTournamentId) {
+				showMessage('Bitte zuerst ein Turnier auswählen.', 'error');
+				return;
+			}
+
+			try {
+				if (!elements.registrationPlayerSelect.value) {
+					throw new Error('Bitte einen verfügbaren Spieler auswählen.');
+				}
+
+				await api(`/tournaments/${state.selectedTournamentId}/players`, {
+					method: 'POST',
+					body: JSON.stringify({
+						playerId: Number(elements.registrationPlayerSelect.value),
+					}),
+				});
+				await refresh();
+				showMessage('Spieler zum Turnier hinzugefügt.', 'info');
+			} catch (error) {
+				showMessage(error.message, 'error');
+			}
+		});
+
+		elements.matchForm.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			if (!state.selectedTournamentId) {
+				showMessage('Bitte zuerst ein Turnier auswählen.', 'error');
+				return;
+			}
+
+			try {
+				if (
+					!elements.playerOneSelect.value ||
+					!elements.playerTwoSelect.value
+				) {
+					throw new Error('Bitte eine offene Paarung auswählen.');
+				}
+
+				if (elements.playerOneSelect.value === elements.playerTwoSelect.value) {
+					throw new Error('Ein Spieler kann nicht gegen sich selbst spielen.');
+				}
+
+				await api(`/tournaments/${state.selectedTournamentId}/matches`, {
+					method: 'POST',
+					body: JSON.stringify({
+						playerOneId: Number(elements.playerOneSelect.value),
+						playerTwoId: Number(elements.playerTwoSelect.value),
+						playerOneScore: Number(elements.playerOneScoreInput.value),
+						playerTwoScore: Number(elements.playerTwoScoreInput.value),
+					}),
+				});
+				await refresh();
+				showMessage('Match gespeichert.', 'info');
+			} catch (error) {
+				showMessage(error.message, 'error');
+			}
+		});
+
+		elements.playerOneSelect.addEventListener('change', () => {
+			renderTournamentWorkspace();
+		});
+
+		elements.refreshButton.addEventListener('click', refresh);
+		elements.refreshTournamentButton.addEventListener('click', async () => {
+			try {
+				await loadSelectedTournament();
+				render();
+				showMessage('Turnierdaten aktualisiert.', 'info');
+			} catch (error) {
+				showMessage(error.message, 'error');
+			}
+		});
+
+		refresh();
+	</script>
+</body>
+</html>

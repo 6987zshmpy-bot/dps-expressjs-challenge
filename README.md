@@ -1,51 +1,190 @@
 # DPS Backend Coding Challenge
 
-## Overview: Round-Robin Tournament Service
+Round-robin tournament service built with `Express`, `TypeScript` and `SQLite`.
 
-Your task is to build a backend service to manage round-robin sports tournaments. In a round-robin tournament, each participant must play against every other participant exactly once.
+## Features
 
-Constraints and rules:
-- Each tournament can have up to 5 participants.
-- A game result gives:
-    - **2 points** for a win
-    - **1 point** for a draw
-    - **0 points** for a loss
-- A tournament is considered completed when everybody has played against everybody.
-- The service must be able to return a **leaderboard** for a given tournament, including its **status**.
+- Create players
+- Create tournaments
+- Add players to tournaments
+- Record exactly one result per player pairing
+- Return tournament status and leaderboard in one endpoint
+- List recorded matches for a tournament
+- Configurable SQLite database path for local, demo and test environments
+- Automated integration test for the main tournament workflow
 
-## Challenge Tasks
+## Stack
 
--   **Fork this project:** You can either fork this repository or create a new one, using tech stack of your choice, and database, but your solution must be easy to run locally and clearly documented. 
-       1. If you're using this template, you can use ([db.service.ts](./src/services/db.service.ts)) to handle SQL queries to the database. 
-       2. Don't create PRs to this repository, provide a separate repo. 
--   **REST API Development:** Design and implement a RESTful APIs to create tournaments, create players and add them to the tournaments and to enter game results.
--   **Special API Endpoint:** Implement an endpoint that returns the status of a given tournament (in planning, started, finished) and the leaderboard (list of all participants of the tournament, their points up to date sorted descendingly).
--   **Submission:** After completing the challenge, email us the URL of your GitHub repository.
--   **Further information:**
-    -   If there is anything unclear regarding requirements, contact us by replying to our email.
-    -   Use small commits, we want to see your progress towards the solution.
-    -   Code clean and follow the best practices.
+- Node.js
+- Express 5
+- TypeScript
+- SQLite via `better-sqlite3`
 
-## Environment Setup
+## Run Locally
 
-If you are using suggested template. Ensure you have Node.js (v14.x or later) and npm (v6.x or later) installed. To set up and run the application, execute the following commands:
-
-```
+```bash
 npm install
 npm run dev
 ```
 
-The application will then be accessible at http://localhost:3000.
+The server starts on `http://localhost:3000`.
 
-## AI Usage Rules
+Opening `http://localhost:3000` in a browser shows a small interactive UI for creating players and tournaments, adding participants, entering match results and viewing the leaderboard.
 
-You are allowed to use AI tools to complete this task. However, **transparency is required**.
-Please include a small artifact folder or a markdown section with:
-- Links to ChatGPT / Claude / Copilot conversations
-- Any prompts used (copy/paste the prompt text if links are private)
-- Notes about what parts were AI-assisted
-- Any generated code snippets you modified or rejected
+For a production-style run:
 
-This helps us understand your workflow and decision-making process, not to judge AI usage.
+```bash
+npm run build
+npm start
+```
 
-Happy coding!
+Run the automated API test:
+
+```bash
+npm test
+```
+
+Optional environment variables:
+
+```bash
+PORT=3000
+DATABASE_PATH=./db/db.sqlite3
+```
+
+## API
+
+### `GET /health`
+
+Health check endpoint.
+
+### `GET /players`
+
+Returns all players.
+
+### `POST /players`
+
+Creates a player.
+
+Request body:
+
+```json
+{
+	"name": "Alice"
+}
+```
+
+### `GET /tournaments`
+
+Returns all tournaments with participant count, played matches, expected matches and status.
+
+### `POST /tournaments`
+
+Creates a tournament.
+
+Request body:
+
+```json
+{
+	"name": "Spring Cup"
+}
+```
+
+### `GET /tournaments/:tournamentId`
+
+Returns tournament details and registered participants.
+
+### `POST /tournaments/:tournamentId/players`
+
+Registers a player for a tournament.
+
+Request body:
+
+```json
+{
+	"playerId": 1
+}
+```
+
+### `POST /tournaments/:tournamentId/matches`
+
+Records a match result between two registered tournament participants.
+
+Request body:
+
+```json
+{
+	"playerOneId": 1,
+	"playerTwoId": 2,
+	"playerOneScore": 3,
+	"playerTwoScore": 1
+}
+```
+
+### `GET /tournaments/:tournamentId/matches`
+
+Returns the recorded matches of a tournament including player names and winner information.
+
+### `GET /tournaments/:tournamentId/leaderboard`
+
+Returns the tournament status together with the current leaderboard.
+
+### `GET /tournaments/:tournamentId/status`
+
+Alias for the leaderboard endpoint above.
+
+## Example Flow
+
+```bash
+curl -X POST http://localhost:3000/players \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice"}'
+
+curl -X POST http://localhost:3000/players \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Bob"}'
+
+curl -X POST http://localhost:3000/tournaments \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Berlin Open"}'
+
+curl -X POST http://localhost:3000/tournaments/1/players \
+  -H "Content-Type: application/json" \
+  -d '{"playerId":1}'
+
+curl -X POST http://localhost:3000/tournaments/1/players \
+  -H "Content-Type: application/json" \
+  -d '{"playerId":2}'
+
+curl -X POST http://localhost:3000/tournaments/1/matches \
+  -H "Content-Type: application/json" \
+  -d '{"playerOneId":1,"playerTwoId":2,"playerOneScore":2,"playerTwoScore":2}'
+
+curl http://localhost:3000/tournaments/1/leaderboard
+```
+
+## Status Rules
+
+- `planning`: no results have been recorded yet
+- `started`: at least one result exists, but not all round-robin matches are completed
+- `finished`: all required pairings for the current participant set have a result
+
+## Assumptions
+
+- A tournament can have at most `5` participants
+- Participants can only be added while the tournament is still in `planning`
+- Each pair of participants can only have one recorded result
+- Points are calculated as `2` for a win, `1` for a draw, `0` for a loss
+
+## Implementation Notes
+
+- The Express application is created in [src/app.ts](/Users/niklashinz/VS Code/dps-expressjs-challenge/dps-expressjs-challenge/src/app.ts) so it can be started normally and also tested automatically
+- The database path can be switched via `DATABASE_PATH`, which makes isolated test databases possible
+- Invalid JSON and unknown routes return explicit API errors instead of generic failures
+
+## Persistence
+
+The application stores data in [db/db.sqlite3](/Users/niklashinz/VS Code/dps-expressjs-challenge/dps-expressjs-challenge/db/db.sqlite3). The service creates the required tournament tables automatically on startup.
+
+## AI Usage
+
+See [AI_USAGE.md](/Users/niklashinz/VS Code/dps-expressjs-challenge/dps-expressjs-challenge/AI_USAGE.md).
