@@ -2,6 +2,14 @@
 
 Round-robin tournament service built with `Express`, `TypeScript` and `SQLite`.
 
+## Author
+
+Developed by `Niklas Hinz`.
+
+## AI Assistance
+
+This project was created with the help of `Codex`.
+
 ## Features
 
 - Create players
