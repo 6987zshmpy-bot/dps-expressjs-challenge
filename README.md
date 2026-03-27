@@ -4,11 +4,7 @@ Round-robin tournament service built with `Express`, `TypeScript` and `SQLite`.
 
 ## Author
 
-Developed by `Niklas Hinz`.
-
-## AI Assistance
-
-This project was created with the help of `Codex`.
+Developed by `Niklas Hinz` with support from `Codex` as a development tool.
 
 ## Features
 
@@ -192,7 +188,3 @@ curl http://localhost:3000/tournaments/1/leaderboard
 ## Persistence
 
 The application stores data in [db/db.sqlite3](/Users/niklashinz/VS Code/dps-expressjs-challenge/dps-expressjs-challenge/db/db.sqlite3). The service creates the required tournament tables automatically on startup.
-
-## AI Usage
-
-See [AI_USAGE.md](/Users/niklashinz/VS Code/dps-expressjs-challenge/dps-expressjs-challenge/AI_USAGE.md).
